@@ -1,91 +1,117 @@
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
+import javafx.scene.control.Label;
 import javafx.scene.control.Slider;
+import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
-import javafx.scene.layout.VBox;
 import javafx.scene.media.Media;
 import javafx.scene.media.MediaPlayer;
 import javafx.scene.media.MediaView;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 
-/**
- * Suscriptor de videos (Etapa 2):
- *  – Muestra un botón con la última URL publicada.
- *  – Al hacer clic abre una ventana que reproduce el video
- *    con la misma interfaz que tenías en la clase Ayudita.
- */
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.Scene;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.control.Slider;
+import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.media.Media;
+import javafx.scene.media.MediaPlayer;
+import javafx.scene.media.MediaView;
+import javafx.stage.Stage;
+import javafx.util.Duration;
+
 public class VideoFollower extends Subscriber {
 
-   private final HBox   view;      // nodo a insertar en el VBox derecho
-   private final Button btn;       // botón que muestra la URL
-   private String lastUrl = null;  // última URL recibida
+   private final HBox view;
+   private final Button btn;
+   private String lastUrl = "Nothing yet.";
 
-   public VideoFollower(String name, String topicName) {
-      super(name, topicName);
+   public VideoFollower(String name, String topic) {
+      super(name, topic);
 
-      btn  = new Button("press");
-      btn.setOnAction(e -> playVideo(lastUrl));   //Configura lo que pasa cuando se hace clic en el botón
-      view = new HBox(5, btn);
+      Label lbl = new Label(topic + "→" + name + ": ");
+      btn = new Button(lastUrl);
+      btn.setPrefWidth(320);
+      btn.setOnAction(e -> playVideo(lastUrl));
+
+      view = new HBox(6, lbl, btn);
    }
 
-   //topic hace el llamado cuando hace algo
    @Override
-   public void update(String message) {
-      lastUrl = message; //Guarda la nueva URL que ingresó
-      btn.setText(lastUrl); //luego esa URL actualiza e texto (certamen 1)
+   public void update(String url) {
+      lastUrl = url;
+      btn.setText(url);
    }
 
-   public HBox getView() { return view; }
+   public HBox getView() {
+      return view;
+   }
 
-
-   //Aquí la ventana que muestra el video
+   /* ---------- reproductor ---------- */
    private void playVideo(String url) {
-      if (url == null || url.isBlank()) return;   // nada que reproducir
+      if (url == null || url.isBlank()) return;
 
-      Media        media       = new Media(url); //se crea la media
-      MediaPlayer  mediaPlayer = new MediaPlayer(media); //luego el reproductor
-      MediaView    mediaView   = new MediaView(mediaPlayer); //ahora e video
+      /* Media, Player, View */
+      Media media = new Media(url);
+      MediaPlayer mp = new MediaPlayer(media);
+      MediaView mv = new MediaView(mp);
+      mv.setPreserveRatio(true);
 
-      //Barra simple
-      Slider slider = new Slider(0, 100, 0); //Barra de progreso con rango de 0 a 100%
-      slider.setShowTickMarks(false);
-      slider.setShowTickLabels(false);
-      slider.setStyle("-fx-accent: red; -fx-padding: 8 0 8 0;");
+      /* ─── Botón Rewind (««) ─── */
+      Button btnRewind = new Button("<<");
+      btnRewind.setOnAction(e ->
+              mp.seek(mp.getCurrentTime().subtract(Duration.seconds(10)))
+      );
 
-      /*Para esta función no caché muy bien como hacerla
-      porque era onda la barra deslizadora de youtube, que se sincroniza con el video*/
-
-      mediaPlayer.currentTimeProperty().addListener(obs -> {
-         double cur  = mediaPlayer.getCurrentTime().toSeconds();
-         double tot  = mediaPlayer.getTotalDuration().toSeconds();
-         if (!slider.isValueChanging() && tot > 0) {
-            slider.setValue(cur / tot * 100);
+      /* ─── Botón Play/Pause (toggle) ─── */
+      Button btnPlayPause = new Button("❚❚");            // empieza en “Pause” porque arranca reproduciendo
+      btnPlayPause.setOnAction(e -> {
+         if (mp.getStatus() == MediaPlayer.Status.PLAYING) {
+            mp.pause();
+            btnPlayPause.setText("▶");                  // cambia a Play
+         } else {
+            mp.play();
+            btnPlayPause.setText("❚❚");                // cambia a Pause
          }
       });
 
-      //slider que hace que si se mueve la barra se cambia el video
-      slider.valueChangingProperty().addListener((obs, wasCh, isCh) -> {
-         if (!isCh) {
-            double tot = mediaPlayer.getTotalDuration().toSeconds();
-            mediaPlayer.seek(Duration.seconds(slider.getValue() / 100 * tot));
-         }
-      });
+      /* ─── Botón Forward (») ─── */
+      Button btnFwd = new Button(">");
+      btnFwd.setOnAction(e ->
+              mp.seek(mp.getCurrentTime().add(Duration.seconds(10)))
+      );
 
-      VBox  root  = new VBox(mediaView, slider);
-      Scene scene = new Scene(root, 600, 400);
+      /* ─── Volumen ─── */
+      Slider vol = new Slider(0, 1, 0.7);
+      mp.volumeProperty().bind(vol.valueProperty());
+
+      /* ─── Banda de controles ─── */
+      HBox controls = new HBox(8, btnRewind, btnPlayPause, btnFwd,
+              new Label("Volume"), vol);
+      controls.setPadding(new Insets(8));
+      controls.setAlignment(Pos.CENTER);
+
+      /* ─── Layout ventana ─── */
+      BorderPane root = new BorderPane();
+      root.setCenter(mv);
+      root.setBottom(controls);
+      root.setPadding(new Insets(10));
 
       Stage win = new Stage();
-      win.setTitle("Reproduciendo video...");
-      win.setScene(scene);
-
-      //la fnción "clean"
+      win.setTitle("Video player");
+      win.setScene(new Scene(root, 640, 420));
       win.setOnCloseRequest(e -> {
-         mediaPlayer.stop();
-         mediaPlayer.dispose();
+         mp.stop();
+         mp.dispose();
       });
-
       win.show();
-      mediaPlayer.play();
+
+      mp.play();
    }
 }
