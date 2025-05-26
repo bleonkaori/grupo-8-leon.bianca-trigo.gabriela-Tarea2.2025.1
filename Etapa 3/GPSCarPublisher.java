@@ -4,7 +4,6 @@ import javafx.scene.control.Alert;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.util.Duration;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -14,30 +13,31 @@ import java.util.List;
 //es el que va a actualizar las ubicaciones a razón de 1 segundo
 public class GPSCarPublisher extends Publisher {
 
-    /* ----- estructura interna ----- */
     private static class Pos {
         final int t; final double x, y;
         Pos(int t, double x, double y){
-            this.t = t; this.x = x; this.y = y;
+            this.t = t;
+            this.x = x;
+            this.y = y;
         }
     }
 
     private final List<Pos> puntos = new ArrayList<>();
     private int index = 0;
-    private Timeline tl;
+    private Timeline tiempo;
 
     /* -------------- ctor -------------- */
     public GPSCarPublisher(String name, Broker broker, String topic) {
         super(name, broker, topic);
 
-        /* pedir archivo */
+        //usamos lo que nos piden que es ell filechooser que contiene las posiciones de los usuarios
         FileChooser fc = new FileChooser();
         fc.setTitle("Seleccione archivo GPS (formato: t x y)");
         File file = fc.showOpenDialog(new Stage());
         if (file == null)
-            return;                     // usuario canceló
+            return;
 
-        if (!leerArchivo(file)) {                    // ← devuelve false si no leyó nada
+        if (!leerArchivo(file)) {   //devuelve un booolean si es que no lee ningun archivo
             new Alert(Alert.AlertType.ERROR,
                     "Archivo vacío: " + file.getName())
                     .showAndWait();
@@ -45,9 +45,9 @@ public class GPSCarPublisher extends Publisher {
         }
 
         //Aqui es donde se apica lo de que se actualiza cada segundo (en verdad esta medido en Hz)
-        tl = new Timeline(new KeyFrame(Duration.seconds(1), e -> publicar()));
-        tl.setCycleCount(Timeline.INDEFINITE);
-        tl.play();
+        tiempo = new Timeline(new KeyFrame(Duration.seconds(1), e -> publicar()));
+        tiempo.setCycleCount(Timeline.INDEFINITE);
+        tiempo.play();
     }
 
     //aqui hacemos la función que será la que leerá las líneas de código del texto "config.txt"
@@ -57,7 +57,8 @@ public class GPSCarPublisher extends Publisher {
             while ((line = br.readLine()) != null) {
                 if (line.isBlank()) continue;
                 String[] p = line.trim().split("\\s+");
-                if (p.length < 3) continue;                  // línea incompleta
+                if (p.length < 3)
+                    continue;  //sto ocurre cuando la línea esta incompelta, o sea solo hay uno o dos valores, en vez de 3
                 try {
                     int    t = Integer.parseInt(p[0]);
                     double x = Double.parseDouble(p[1]);
@@ -75,7 +76,8 @@ public class GPSCarPublisher extends Publisher {
     }
 
     private void publicar() {
-        if (index >= puntos.size()) { tl.stop();
+        if (index >= puntos.size()) {
+            tiempo.stop();
             return;
         }
 

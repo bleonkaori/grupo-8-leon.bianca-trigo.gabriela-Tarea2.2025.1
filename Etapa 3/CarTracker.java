@@ -10,14 +10,14 @@ import javafx.stage.Stage;
 public class CarTracker extends Subscriber {
 
     private final Circle circle = new Circle(6, Color.RED);
-    private final Label  label = new Label("t 0, x 0, y 0");
+    private final Label  label = new Label("t: 0, x: 0, y: 0");
 
     public CarTracker(String name, String topic) {
         super(name, topic);
 
         BorderPane root = new BorderPane();
         BorderPane canvas = new BorderPane();
-        canvas.setPrefSize(300, 400);
+        canvas.setPrefSize(600, 400);
         canvas.setCenter(circle);
 
         root.setCenter(canvas);
@@ -31,10 +31,10 @@ public class CarTracker extends Subscriber {
         primaryStage.show();
     }
 
-    /** Llega mensaje "t x y" desde el Broker */
-    @Override
-    public void update(String msg) {
-        String[] p = msg.trim().split("\\s+");
+
+    @Override  //Llega mensaje el mensaje de las posiciones al broker
+    public void update(String message) {
+        String[] p = message.trim().split("\\s+");
         if (p.length < 3) return;
         try {
             double t = Double.parseDouble(p[0]);

@@ -5,91 +5,84 @@ import javafx.stage.Stage;
 import javafx.scene.Scene;
 import javafx.scene.layout.VBox;
 import javafx.geometry.Pos;
-import javafx.geometry.Insets; //usaremos una librería nueva
 import java.util.Optional;
 
 public class Stage1 extends Application {
+
     private VBox vBoxLeft, vBoxRight;
     private Broker broker;
 
-    //Aquí emepezamos a crear la ventana que se va a mostrar
+    @Override
     public void start(Stage primaryStage) {
         broker = new Broker();
-        //Creamos los constructores y partimos con el menú
-        MenuBar menuBar = new MenuBar();
-        //Que contiene dos, el publisher y el subscriber
-        Menu menuPublisher  = new Menu("Publisher");
-        Menu menuSubscriber = new Menu("Subscriber");
-        menuBar.getMenus().addAll(menuPublisher, menuSubscriber);
-        //Aquí lo que va dentro de cada uno de esos dos, en este caso es e de Publisher
-        MenuItem menuItemVideoPub  = new MenuItem("Video");
-        MenuItem menuItemGPSPub    = new MenuItem("Car's GPS");
-        menuPublisher.getItems().addAll(menuItemVideoPub, menuItemGPSPub);
-        //Y aquí para Subscriber
-        MenuItem menuItemVideoSubs = new MenuItem("Video");
-        MenuItem menuItemGPSSubs   = new MenuItem("Car's GPS");
-        menuSubscriber.getItems().addAll(menuItemVideoSubs, menuItemGPSSubs);
-        //Esto se usa para dividir la ventana en partes
+
+        //Barra del menú que va en la parte de arriba a la izquierda
+        MenuBar menu = new MenuBar();
+        Menu menuPub  = new Menu("Publisher");
+        Menu menuSub = new Menu("Subscriber");
+        menu.getMenus().addAll(menuPub, menuSub); //se añaden los menus "oficiales" al menu que es el borde que se crea arriba
+
+        //aquí creamos los items que van cuando le damos click a los menus, ya sea publisher o subscriber
+        MenuItem videoPub  = new MenuItem("Video");
+        MenuItem videoSub = new MenuItem("Video");
+        menuPub.getItems().add(videoPub); //los añadimos
+        menuSub.getItems().add(videoSub);
+
+        //para dividir la ventana usamos borderpane
         BorderPane borderPane = new BorderPane();
-        borderPane.setTop(menuBar);
-        borderPane.setPadding(new Insets(10));
-        //Dividir la fentana en lados
-        vBoxLeft = new VBox(8);
-        vBoxLeft.setAlignment(Pos.TOP_LEFT);
-        borderPane.setLeft(vBoxLeft);
-        vBoxRight = new VBox(8);
+        borderPane.setTop(menu);
+
+        //Aquí usamos vBox ppara poder usar más espacio
+        vBoxLeft  = new VBox(5);
+        vBoxRight = new VBox(10);
+        vBoxLeft.setAlignment(Pos.TOP_LEFT);//creamos las opsiciones arriba a la izquierda para ordenar los menú sub y pub
         vBoxRight.setAlignment(Pos.TOP_LEFT);
+        borderPane.setLeft(vBoxLeft);
         borderPane.setRight(vBoxRight);
-        //Y aquí creamos el escenario
-        Scene scene = new Scene(borderPane, 800, 400);
-        primaryStage.setTitle("Publisher-Subscriber Simulator");
+
+        Scene scene = new Scene(borderPane, 600, 400); //creamos la ventana y e añadimos el título y lo demás ara que se vea
+        primaryStage.setTitle("Stage1 – Video Publisher - Subscriber");
         primaryStage.setScene(scene);
         primaryStage.show();
 
-        //Y aquí os setOnAction, tall que si presiono un botón se ejecuta otra cosa
-        menuItemVideoPub.setOnAction(e -> addVideoPub());
-        menuItemVideoSubs.setOnAction(e -> addVideoSubs());
+        videoPub.setOnAction(e  -> addVideoPub());
+        videoSub.setOnAction(e -> addVideoSubs()); //añadimos los handlers
     }
-    //Y esto es para que se vea más bonito a ventana a vista del susuario
-    private String getInputSting(String prompt) {
-        TextInputDialog dialog = new TextInputDialog();
-        dialog.setTitle(prompt);
-        dialog.setHeaderText("Please enter your " + prompt);
-        dialog.setContentText(prompt + ":");
-        Optional<String> result = dialog.showAndWait();
-        return result.orElse(null);
+
+    //Reusamos código del propporcionado en PubSubatternSimulation
+    private String prompt(String message) {
+        TextInputDialog texto  = new TextInputDialog();
+        texto.setHeaderText(message);
+        Optional<String> e = texto.showAndWait();
+        return e.orElse(null);
     }
 
     private void addVideoPub() {
-        String name  = getInputSting("Video Publisher Name");
+        String name  = prompt("Video Publisher Name");
         if (name == null) return;
-        String topic = getInputSting("Video Publisher Topic");
+        String topic = prompt("Video Publisher Topic");
         if (topic == null) return;
 
-        vBoxLeft.getChildren().add(
-                new VideoPublisher(name, broker, topic).getView()
-        );
+        new VideoPublisher(name, broker, topic);        //crea el publisher (sin usar getView)
+        vBoxLeft.getChildren().add(                    // *** CAMBIO: mostramos un Label simple
+                new Label(name + " → [" + topic + "]"));
     }
 
-    //esto hace que si no se escribe lo indicado, retorna nada
     private void addVideoSubs() {
-        String name  = getInputSting("Video Subscriber Name");
-        if (name == null)
-            return;
-        String topic = getInputSting("Video Subscriber Topic");
-        if (topic == null)
-            return;
+        String name  = prompt("Video Subscriber Name");
+        if (name == null) return;
+        String topic = prompt("Video Subscriber Topic");
+        if (topic == null) return;
 
-        //Si el subscriber ingresado no es válido, el usuario es advertido
-        VideoFollower videoFollower = new VideoFollower(name, topic);
-        if (broker.subscribe(videoFollower))           // topic debe existir
-            vBoxRight.getChildren().add(videoFollower.getView());
+        VideoFollower vf = new VideoFollower(name, topic);
+        if (broker.subscribe(vf))
+            vBoxRight.getChildren().add( 
+                    new Label(name + " ← [" + topic + "]"));
         else
             new Alert(Alert.AlertType.ERROR,
                     "Topic \"" + topic + "\" does not exist").showAndWait();
     }
 
-    //Típica clase main
     public static void main(String[] args) {
         launch(args);
     }
