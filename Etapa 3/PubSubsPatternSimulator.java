@@ -6,9 +6,9 @@ import javafx.stage.Stage;
 import javafx.scene.Scene;
 import javafx.scene.layout.VBox;
 import javafx.geometry.Pos;
-
 import java.util.Optional;
 
+//se mantiene el mismo archvio de antes pero le agregamos ahora las clases de la etapa 3
 public class PubSubsPatternSimulator extends Application {
     private VBox vBoxLeft, vBoxRight;
     private Broker broker;
@@ -51,14 +51,15 @@ public class PubSubsPatternSimulator extends Application {
         primaryStage.setResizable(true);
         primaryStage.show();
 
-        /* Handle menu actions */
         menuItemVideoPub.setOnAction(e -> addVideoPub());
         menuItemVideoSubs.setOnAction(e -> addVideoSubs());
+
+        //esto se agrega
         menuItemGPSPub.setOnAction(e  -> addGPSCarPub());      // crea publisher GPS
         menuItemGPSSubs.setOnAction(e -> addCarSubs());        // crea tracker GPS
     }
 
-    /* diálogo reutilizable */
+
     private String getInputSting(String prompt){
         String string = "default";
         TextInputDialog dialog = new TextInputDialog(string);
@@ -70,21 +71,13 @@ public class PubSubsPatternSimulator extends Application {
         else return string;
     }
 
-    /* Video Publisher */
+
     private void addVideoPub() {
         String name  = getInputSting("Video Publisher Name");
         String topic = getInputSting("Video Publisher Topic");
         vBoxLeft.getChildren().add(new VideoPublisher(name, broker, topic).getView());
     }
 
-    /* GPS Publisher (archivo se elige en su propio constructor) */
-    private void addGPSCarPub() {
-        String name  = getInputSting("GPS Publisher Name");
-        String topic = getInputSting("GPS Publisher Topic");
-        new GPSCarPublisher(name, broker, topic);   // constructor con 3 args
-    }
-
-    /* Video Subscriber */
     private void addVideoSubs() {
         String name  = getInputSting("Video Subscriber Name");
         String topic = getInputSting("Video Subscriber Topic");
@@ -96,7 +89,13 @@ public class PubSubsPatternSimulator extends Application {
                     "Topic \"" + topic + "\" does not exist").showAndWait();
     }
 
-    /* Car Tracker  (corregido: ahora valida la suscripción) */
+    //esto se agrega
+    private void addGPSCarPub() {
+        String name  = getInputSting("GPS Publisher Name");
+        String topic = getInputSting("GPS Publisher Topic");
+        new GPSCarPublisher(name, broker, topic);   // constructor con 3 args
+    }
+    //esto se agrega
     private void addCarSubs() {
         String name  = getInputSting("Car Tracker Name");
         String topic = getInputSting("Car Tracker Topic");
@@ -106,7 +105,6 @@ public class PubSubsPatternSimulator extends Application {
             new Alert(Alert.AlertType.ERROR,
                     "Topic \"" + topic + "\" does not exist").showAndWait();
         }
-        /* CarTracker abre su propia ventana; no se añade al vBoxRight */
     }
 
     public static void main(String[] args) {

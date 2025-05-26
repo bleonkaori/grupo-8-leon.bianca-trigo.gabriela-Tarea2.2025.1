@@ -11,17 +11,19 @@ import java.io.FileReader;
 import java.util.ArrayList;
 import java.util.List;
 
-/** Publica posiciones “t x y” a razón de 1 Hz. */
+//es el que va a actualizar las ubicaciones a razón de 1 segundo
 public class GPSCarPublisher extends Publisher {
 
     /* ----- estructura interna ----- */
     private static class Pos {
         final int t; final double x, y;
-        Pos(int t, double x, double y) { this.t = t; this.x = x; this.y = y; }
+        Pos(int t, double x, double y){
+            this.t = t; this.x = x; this.y = y;
+        }
     }
 
     private final List<Pos> puntos = new ArrayList<>();
-    private int idx = 0;
+    private int index = 0;
     private Timeline tl;
 
     /* -------------- ctor -------------- */
@@ -32,22 +34,23 @@ public class GPSCarPublisher extends Publisher {
         FileChooser fc = new FileChooser();
         fc.setTitle("Seleccione archivo GPS (formato: t x y)");
         File file = fc.showOpenDialog(new Stage());
-        if (file == null) return;                     // usuario canceló
+        if (file == null)
+            return;                     // usuario canceló
 
         if (!leerArchivo(file)) {                    // ← devuelve false si no leyó nada
             new Alert(Alert.AlertType.ERROR,
-                    "Archivo vacío o sin líneas válidas: " + file.getName())
+                    "Archivo vacío: " + file.getName())
                     .showAndWait();
             return;                                  // no arranca
         }
 
-        /* timeline 1 Hz */
+        //Aqui es donde se apica lo de que se actualiza cada segundo (en verdad esta medido en Hz)
         tl = new Timeline(new KeyFrame(Duration.seconds(1), e -> publicar()));
         tl.setCycleCount(Timeline.INDEFINITE);
         tl.play();
     }
 
-    /* ---------- helpers ---------- */
+    //aqui hacemos la función que será la que leerá las líneas de código del texto "config.txt"
     private boolean leerArchivo(File f) {
         try (BufferedReader br = new BufferedReader(new FileReader(f))) {
             String line;
@@ -60,13 +63,11 @@ public class GPSCarPublisher extends Publisher {
                     double x = Double.parseDouble(p[1]);
                     double y = Double.parseDouble(p[2]);
                     puntos.add(new Pos(t, x, y));
-                } catch (NumberFormatException ignored) {
-                    /* ignora línea no numérica */
-                }
+                } catch (NumberFormatException ignored) {}
             }
-        } catch (Exception ex) {
+        } catch (Exception e) {
             new Alert(Alert.AlertType.ERROR,
-                    "Error leyendo archivo:\n" + ex.getMessage()).showAndWait();
+                    "Error leyendo archivo:\n" + e.getMessage()).showAndWait();
             return false;
         }
         puntos.sort((a, b) -> Integer.compare(a.t, b.t));
@@ -74,8 +75,11 @@ public class GPSCarPublisher extends Publisher {
     }
 
     private void publicar() {
-        if (idx >= puntos.size()) { tl.stop(); return; }
-        Pos p = puntos.get(idx++);
+        if (index >= puntos.size()) { tl.stop();
+            return;
+        }
+
+        Pos p = puntos.get(index++);
         publishNewEvent(p.t + " " + p.x + " " + p.y);
     }
 }

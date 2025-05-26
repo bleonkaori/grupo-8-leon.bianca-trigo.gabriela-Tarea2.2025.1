@@ -11,7 +11,6 @@ import javafx.scene.media.MediaPlayer;
 import javafx.scene.media.MediaView;
 import javafx.stage.Stage;
 import javafx.util.Duration;
-
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -29,24 +28,24 @@ import javafx.util.Duration;
 public class VideoFollower extends Subscriber {
 
    private final HBox view;
-   private final Button btn;
-   private String lastUrl = "Nothing yet.";
+   private final Button button;
+   private String lastUrl = "Nothing yet";
 
    public VideoFollower(String name, String topic) {
       super(name, topic);
 
-      Label lbl = new Label(topic + "→" + name + ": ");
-      btn = new Button(lastUrl);
-      btn.setPrefWidth(320);
-      btn.setOnAction(e -> playVideo(lastUrl));
+      Label label = new Label(topic + "→" + name + ": ");
+      button = new Button(lastUrl);
+      button.setPrefWidth(320);
+      button.setOnAction(e -> playVideo(lastUrl));
 
-      view = new HBox(6, lbl, btn);
+      view = new HBox(6, label, button);
    }
 
    @Override
    public void update(String url) {
       lastUrl = url;
-      btn.setText(url);
+      button.setText(url);
    }
 
    public HBox getView() {
@@ -57,60 +56,58 @@ public class VideoFollower extends Subscriber {
    private void playVideo(String url) {
       if (url == null || url.isBlank()) return;
 
-      /* Media, Player, View */
+      //Esto es el videi reproductor, se crea la media luego el video y luego que se vea el video
       Media media = new Media(url);
       MediaPlayer mp = new MediaPlayer(media);
       MediaView mv = new MediaView(mp);
       mv.setPreserveRatio(true);
 
-      /* ─── Botón Rewind (««) ─── */
-      Button btnRewind = new Button("<<");
-      btnRewind.setOnAction(e ->
+      //atrasar el video
+      Button reverse = new Button("<<");
+      reverse.setOnAction(e ->
               mp.seek(mp.getCurrentTime().subtract(Duration.seconds(10)))
       );
 
-      /* ─── Botón Play/Pause (toggle) ─── */
-      Button btnPlayPause = new Button("❚❚");            // empieza en “Pause” porque arranca reproduciendo
-      btnPlayPause.setOnAction(e -> {
+      //pausar el video
+      Button pause = new Button("❚❚");            // empieza en “Pause” porque arranca reproduciendo
+      pause.setOnAction(e -> {
          if (mp.getStatus() == MediaPlayer.Status.PLAYING) {
             mp.pause();
-            btnPlayPause.setText("▶");                  // cambia a Play
+            pause.setText("▶");                  // cambia a Play
          } else {
             mp.play();
-            btnPlayPause.setText("❚❚");                // cambia a Pause
+            pause.setText("❚❚");                // cambia a Pause
          }
       });
 
-      /* ─── Botón Forward (») ─── */
-      Button btnFwd = new Button(">");
-      btnFwd.setOnAction(e ->
+      //avanzar el video
+      Button forward = new Button(">");
+      forward.setOnAction(e ->
               mp.seek(mp.getCurrentTime().add(Duration.seconds(10)))
       );
 
-      /* ─── Volumen ─── */
-      Slider vol = new Slider(0, 1, 0.7);
-      mp.volumeProperty().bind(vol.valueProperty());
+      //volumen
+      Slider volumen = new Slider(0, 1, 0.7);
+      mp.volumeProperty().bind(volumen.valueProperty());
 
-      /* ─── Banda de controles ─── */
-      HBox controls = new HBox(8, btnRewind, btnPlayPause, btnFwd,
-              new Label("Volume"), vol);
+
+      HBox controls = new HBox(8, reverse, pause, pause, new Label("Volume"), volumen);
       controls.setPadding(new Insets(8));
       controls.setAlignment(Pos.CENTER);
 
-      /* ─── Layout ventana ─── */
+      //ventana divisora
       BorderPane root = new BorderPane();
       root.setCenter(mv);
       root.setBottom(controls);
       root.setPadding(new Insets(10));
 
-      Stage win = new Stage();
-      win.setTitle("Video player");
-      win.setScene(new Scene(root, 640, 420));
-      win.setOnCloseRequest(e -> {
-         mp.stop();
-         mp.dispose();
+      //escenario
+      Stage primaryStage = new Stage();
+      primaryStage.setTitle("Video player");
+      primaryStage.setScene(new Scene(root, 640, 420));
+      primaryStage.setOnCloseRequest(e -> {mp.stop(); mp.dispose();
       });
-      win.show();
+      primaryStage.show();
 
       mp.play();
    }
