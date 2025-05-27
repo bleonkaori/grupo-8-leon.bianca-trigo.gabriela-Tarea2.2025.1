@@ -55,8 +55,8 @@ public class PubSubsPatternSimulator extends Application {
         menuItemVideoSubs.setOnAction(e -> addVideoSubs());
 
         //esto se agrega
-        menuItemGPSPub.setOnAction(e  -> addGPSCarPub());      // crea publisher GPS
-        menuItemGPSSubs.setOnAction(e -> addCarSubs());        // crea tracker GPS
+        menuItemGPSPub.setOnAction(e  -> addGPSCarPub());      //crea publisher GPS
+        menuItemGPSSubs.setOnAction(e -> addCarSubs());        //crea tracker GPS
     }
 
 
@@ -72,13 +72,13 @@ public class PubSubsPatternSimulator extends Application {
     }
 
 
-    private void addVideoPub() {
+    private void addVideoPub(){
         String name  = getInputSting("Video Publisher Name");
         String topic = getInputSting("Video Publisher Topic");
         vBoxLeft.getChildren().add(new VideoPublisher(name, broker, topic).getView());
     }
 
-    private void addVideoSubs() {
+    private void addVideoSubs(){
         String name  = getInputSting("Video Subscriber Name");
         String topic = getInputSting("Video Subscriber Topic");
         VideoFollower videoFollower = new VideoFollower(name, topic);
@@ -88,7 +88,7 @@ public class PubSubsPatternSimulator extends Application {
             new Alert(Alert.AlertType.ERROR,
                     "Topic \"" + topic + "\" does not exist").showAndWait();
     }
-
+    //Reutilizamos a base de Stage1 y añadimos lo creado
     //esto se agrega
     private void addGPSCarPub() {
         String name  = getInputSting("GPS Publisher Name");
@@ -101,7 +101,7 @@ public class PubSubsPatternSimulator extends Application {
         String topic = getInputSting("Car Tracker Topic");
         CarTracker tracker = new CarTracker(name, topic);
 
-        if (!broker.subscribe(tracker)) {                           // <-- comprobación
+        if (!broker.subscribe(tracker)) {   //comrube en el broker
             new Alert(Alert.AlertType.ERROR,
                     "Topic \"" + topic + "\" does not exist").showAndWait();
         }
