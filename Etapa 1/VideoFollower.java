@@ -11,7 +11,7 @@ public class VideoFollower extends Subscriber {
 
    public VideoFollower(String name, String topicName) {
       super(name, topicName);
-      video = new Button(""); //Se crea un boton vacio
+      video = new Button("Nothing yet."); //Se crea un boton vacio
       Label info = new Label(" "+topicName + " -> " + name + ":");
       view = new HBox(10,info, video);
 
