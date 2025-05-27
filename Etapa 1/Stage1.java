@@ -63,9 +63,8 @@ public class Stage1 extends Application {
         String topic = prompt("Video Publisher Topic");
         if (topic == null) return;
 
-        new VideoPublisher(name, broker, topic);        //crea el publisher (sin usar getView)
-        vBoxLeft.getChildren().add(                    // *** CAMBIO: mostramos un Label simple
-                new Label(name + " → [" + topic + "]"));
+        VideoPublisher vp = new VideoPublisher(name, broker, topic); // guarda el objeto
+        vBoxLeft.getChildren().add(vp.getView()); // agrega la vista del publicador (que incluye el TextField)
     }
 
     private void addVideoSubs() {
@@ -76,8 +75,9 @@ public class Stage1 extends Application {
 
         VideoFollower vf = new VideoFollower(name, topic);
         if (broker.subscribe(vf))
-            vBoxRight.getChildren().add( 
-                    new Label(name + " ← [" + topic + "]"));
+            vBoxRight.getChildren().add(
+                    vf.getView());
+
         else
             new Alert(Alert.AlertType.ERROR,
                     "Topic \"" + topic + "\" does not exist").showAndWait();
