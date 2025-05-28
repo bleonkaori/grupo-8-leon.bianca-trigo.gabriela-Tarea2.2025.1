@@ -1,102 +1,129 @@
-import javafx.geometry.Insets;
-import javafx.geometry.Pos;
-import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
-import javafx.scene.control.Slider;
-import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.Node;
 import javafx.scene.media.Media;
 import javafx.scene.media.MediaPlayer;
 import javafx.scene.media.MediaView;
 import javafx.stage.Stage;
+import javafx.scene.Scene;
+import javafx.scene.layout.BorderPane;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.control.Slider;
 import javafx.util.Duration;
 
+
+//etapa 2 extiende Subscriber
+//se reproduce el video en esta etapa.
+
 public class VideoFollower extends Subscriber {
+   private HBox view; //para poner el boton y etiquetas
+   private Button video; //mostrar el ultimo link publicado
+   private String currentUrl = null; //ultimo link recibido, este sera el que reproduce
 
-   private final HBox view;
-   private final Button button;
-   private String lastUrl = "Nothing yet";
+   public VideoFollower(String name, String topicName) {
+      super(name, topicName);
 
-   public VideoFollower(String name, String topic) {
-      super(name, topic);
+      video = new Button("Nothing yet."); //Se crea un boton vacio
+      Label info = new Label(" "+topicName + " -> " + name + ":");
+      view = new HBox(10,info, video);
 
-      Label label = new Label(topic + "→" + name + ": ");
-      button = new Button(lastUrl);
-      button.setPrefWidth(320);
-      button.setOnAction(e -> playVideo(lastUrl));
 
-      view = new HBox(6, label, button);
-   }
+      //cuando se presione el boton:
+      video.setOnAction(e->{
+         if(currentUrl != null && !currentUrl.isEmpty()) {
+            try{
+               //se carga el video desde el link recibido
+               Media media = new Media(currentUrl.trim());
+               MediaPlayer mediaPlayer = new MediaPlayer(media);
+               MediaView mediaView = new MediaView(mediaPlayer);
+               mediaView.setPreserveRatio(true);
 
-   @Override
-   public void update(String url) {
-      lastUrl = url;
-      button.setText(url);
-   }
+               //estos son solo tamaños
+               mediaView.setFitWidth(640);
+               mediaView.setFitHeight(360);
 
-   public HBox getView() {
-      return view;
-   }
+               //Botones para controlar:
 
-   //reproductor del video
-   private void playVideo(String url) {
-      if (url == null || url.isBlank())
-         return;
+               //el boton para iniciar
+               Button play = new Button(">");
+               play.setOnAction(ev -> {
+                  mediaPlayer.play();
 
-      //Esto es el videi reproductor, se crea la media luego el video y luego que se vea el video
-      Media media = new Media(url);
-      MediaPlayer mp = new MediaPlayer(media);
-      MediaView mv = new MediaView(mp);
-      mv.setPreserveRatio(true);
+                  //print de prueba
+                  System.out.println("El video se esta reproduciendo");
+               });
 
-      //atrasar el video
-      Button reverse = new Button("<<");
-      reverse.setOnAction(e ->
-              mp.seek(mp.getCurrentTime().subtract(Duration.seconds(10)))
-      );
+               //para volver 10s
+               Button reverse = new Button("<<");
+               reverse.setOnAction(ev -> {
+                  mediaPlayer.seek(mediaPlayer.getCurrentTime().subtract(Duration.seconds(10)));
+                  System.out.println("Volviendo 10s");
 
-      //pausar el video
-      Button pause = new Button("❚❚");  //empieza en pausa porque arranca reproduciendo
-      pause.setOnAction(e -> { //la acción que ejecuta si se presiona el botón de pausa
-         if (mp.getStatus() == MediaPlayer.Status.PLAYING) { //si se esta reproduciendo, entonces el video pasa a pausa
-            mp.pause(); //aquí se pausa y se cambia el dibujo al tipico triangulode play
-            pause.setText("▶");   //cambia a Play
-         } else {
-            mp.play();
-            pause.setText("❚❚");    //cambia a Pause
+               });
+
+
+               //slider del volumen
+               Slider volumen = new Slider(0, 1, 0.7); //empieza con volumen a 70%
+               mediaPlayer.volumeProperty().bind(volumen.valueProperty());
+
+               Label volumeLabel = new Label("Volume");
+
+
+               //organizacion de controles
+               HBox controles = new HBox(10, play, reverse, volumeLabel,volumen);
+
+               controles.setPadding(new Insets(10));
+               controles.setAlignment(Pos.CENTER);
+
+               //aqui es la estructura de la ventana
+               BorderPane root = new BorderPane();
+               root.setCenter(mediaView); //el video va arriba
+               root.setBottom(controles); //controles abajo
+               root.setPadding(new Insets(10));
+
+               //se crea la ventana del reproductor
+               Stage videoStage = new Stage();
+               videoStage.setTitle("Video Viewer");
+               videoStage.setScene(new Scene(root, 640, 420));
+
+
+               //cuando se detiene y el reproductor al cerrar la ventana
+               videoStage.setOnCloseRequest(ev->{
+                  mediaPlayer.stop();
+                  mediaPlayer.dispose();
+               });
+
+               videoStage.show();
+
+               //si es que se desea que el video se reproduzca de una,
+               //descomentar mediaPlayer.play().
+               //lo deje comentado para que se vea que funciona el boton ">" para darle play
+               //al video
+
+
+               mediaPlayer.play(); //al abrir se reproduce
+            }catch (Exception ex){
+               System.out.println("Error reproducir video");
+            }
          }
       });
 
-      //avanzar el video
-      Button forward = new Button(">");
-      forward.setOnAction(e -> //si se oprime el botón de avanzar entonces se avanzan 10 segundos más
-              mp.seek(mp.getCurrentTime().add(Duration.seconds(10)))
-      );
 
-      //volumen
-      Slider volumen = new Slider(0, 1, 0.7); //el volumen es una slider como el de youtube
-      mp.volumeProperty().bind(volumen.valueProperty()); //en esta línea necesite ayuda ya que no sabía como usar bind
-
-
-      HBox botones = new HBox(8, reverse, pause, pause, new Label("Volume"), volumen); //en esta HBox le asignamos los botones a la ventana del video reproductor
-      botones.setPadding(new Insets(8));
-      botones.setAlignment(Pos.CENTER);
-
-      //ventana divisora
-      BorderPane root = new BorderPane();
-      root.setCenter(mv);
-      root.setBottom(botones);
-      root.setPadding(new Insets(10));
-
-      //escenario
-      Stage primaryStage = new Stage();
-      primaryStage.setTitle("Video player");
-      primaryStage.setScene(new Scene(root, 640, 420));
-      primaryStage.setOnCloseRequest(e -> {mp.stop(); mp.dispose();
-      });
-      primaryStage.show();
-
-      mp.play();
    }
+
+
+   //opciones que ya estaban en la etapa1
+   @Override
+   public void update(String message) {
+      currentUrl = message;
+      video.setText(message); //Aqui es para actualizar con el nuevo link
+   }
+   @Override
+   public Node getView(){
+      return view;
+   }
+
+
 }
