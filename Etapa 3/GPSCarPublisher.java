@@ -1,6 +1,8 @@
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
+import javafx.scene.Parent;
 import javafx.scene.control.Alert;
+import javafx.scene.control.Label;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.util.Duration;
@@ -10,30 +12,51 @@ import java.io.FileReader;
 import java.util.ArrayList;
 import java.util.List;
 
-//es el que va a actualizar las ubicaciones a razón de 1 segundo
-public class GPSCarPublisher extends Publisher {
 
+
+//es el que va a actualizar las ubicaciones a razón de 1 segundo
+
+public class GPSCarPublisher extends Publisher {
+//posicion (tiempo, x,y)
     private static class Pos {
-        final int t; final double x, y;
+        final int t;
+        final double x, y;
+
+
+        private final Label label = new Label();
         Pos(int t, double x, double y){
             this.t = t;
             this.x = x;
             this.y = y;
         }
     }
+    private final Label label = new Label();
 
+    //la lista de posiciones leidas desde el archivo
     private final List<Pos> puntos = new ArrayList<>();
+
+
+    private final List<Pos> interpolados = new ArrayList<>();
+
+    //para guardar el nombre del topico
+    private final String topicName;
+    //posicion actual al publicar
     private int index = 0;
+    //temporizador para publicar cada segundo
     private Timeline tiempo;
 
-    /* -------------- ctor -------------- */
+//este solicita archivo con datos GPS y comienza la publicacion
     public GPSCarPublisher(String name, Broker broker, String topic) {
         super(name, broker, topic);
+
+        //aqui guardamos el nombre del topico, ya que topic es privado en la clase Publisher
+        this.topicName = topic;
 
         //usamos lo que nos piden que es ell filechooser que contiene las posiciones de los usuarios
         FileChooser fc = new FileChooser();
         fc.setTitle("Seleccione archivo GPS (formato: t x y)");
         File file = fc.showOpenDialog(new Stage());
+
         if (file == null)
             return;
 
@@ -43,6 +66,11 @@ public class GPSCarPublisher extends Publisher {
                     .showAndWait();
             return;                                  // no arranca
         }
+
+        //se genera los puntos intermedios porque en la etapa 3 piden que el GPS publique cada segundo
+        //esto aparece en las instrucciones en la parte 2.2. "El GPS del movil lee este archivo e interpola las posiciones
+        //intermedias para enviar....."
+        interpolar();
 
         //Aqui es donde se apica lo de que se actualiza cada segundo (en verdad esta medido en Hz)
         tiempo = new Timeline(new KeyFrame(Duration.seconds(1), e -> publicar()));
@@ -75,13 +103,60 @@ public class GPSCarPublisher extends Publisher {
         return !puntos.isEmpty();
     }
 
+
+    //segun las instrucciones de la etapa 3, el GPS debe enviar una posicion cada segundo
+    //aunque el archivo original de los puntos esten separados por mas tiempo. Por eso aqui se rellena con puntos
+    //intermedios. Esto segun las instrucciones, como para evitar que se teletransporte de un punto a otro.
+    private void interpolar(){
+        for(int i = 0; i<puntos.size()-1; i++){
+            Pos p1 = puntos.get(i);
+            Pos p2 = puntos.get(i+1);
+            int dt = p2.t - p1.t;
+
+            //si estan raros los puntos o repetidos se salta
+            if(dt<=0){
+                continue;
+            }
+
+            for(int t = 0; t< dt; t++){
+                double ratio = (double)t/dt;
+                double x = p1.x + ratio * (p2.x - p1.x);
+                double y = p1.y + ratio * (p2.y - p1.y);
+
+                //aqui se introduce el punto que toca en ese segundo
+                interpolados.add(new Pos(t, x, y));
+            }
+        }
+        //agregar el ultimo punto para cerrar.
+        Pos ultimo = puntos.get(puntos.size()-1);
+        interpolados.add(new Pos(ultimo.t, ultimo.x, ultimo.y));
+
+    }
+
+
     private void publicar() {
-        if (index >= puntos.size()) {
+        if (index >= interpolados.size()) {
             tiempo.stop();
             return;
         }
 
-        Pos p = puntos.get(index++);
-        publishNewEvent(p.t + " " + p.x + " " + p.y);
+        Pos p = interpolados.get(index++);
+
+        //Mensaje por la terminal para ver si funciona
+        String msg = p.t+ " "+p.x+" "+p.y;
+        System.out.println("Publicando: "+msg);
+
+
+        publishNewEvent(msg);
+
+        label.setText(getName() + "->"+topicName + ":"+msg);
     }
+
+
+    //PARA QUE COMPILE POR LA HERENCIA DE COMPONENT
+    @Override
+    public Parent getView() {
+        return label;  // Devolvemos una vista vacía
+    }
+
 }
