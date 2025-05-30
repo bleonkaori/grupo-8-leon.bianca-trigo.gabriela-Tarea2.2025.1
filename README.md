@@ -1,6 +1,11 @@
 
 # 📘 README
 
+## Integrantes:
+* Bianca León – Rol: 202330527-8 
+* Gabriela Trigo - Rol: 202330561-8
+
+
 ## ✅ Prerrequisitos
 Antes de comenzar, asegúrate de tener lo siguiente instalado y configurado en tu sistema:
 
