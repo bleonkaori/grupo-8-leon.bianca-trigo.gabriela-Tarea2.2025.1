@@ -1,5 +1,5 @@
 
-# 📘 Documentación de Ejecución del Proyecto – Etapas 1 a 4
+# 📘 README
 
 ## ✅ Prerrequisitos
 Antes de comenzar, asegúrate de tener lo siguiente instalado y configurado en tu sistema:
