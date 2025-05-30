@@ -7,8 +7,8 @@ public abstract class Component {
    protected Component (){}  // to ban creation of publisher or subscriber without name.
 
 
-   public Component(String componentName, String topicName){
-      name = componentName;
+   public Component(String name, String topicName){
+      this.name = name;
       this.topicName = topicName;
    }
 

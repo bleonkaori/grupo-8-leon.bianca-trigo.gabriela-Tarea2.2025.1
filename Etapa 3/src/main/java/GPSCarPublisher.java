@@ -19,12 +19,12 @@ import java.util.List;
 public class GPSCarPublisher extends Publisher {
 //posicion (tiempo, x,y)
     private static class Pos {
-        final int t;
+        final double t;
         final double x, y;
 
 
         private final Label label = new Label();
-        Pos(int t, double x, double y){
+        Pos(double t, double x, double y){
             this.t = t;
             this.x = x;
             this.y = y;
@@ -86,9 +86,9 @@ public class GPSCarPublisher extends Publisher {
                 if (line.isBlank()) continue;
                 String[] p = line.trim().split("\\s+");
                 if (p.length < 3)
-                    continue;  //sto ocurre cuando la línea esta incompelta, o sea solo hay uno o dos valores, en vez de 3
+                    continue;  // Esto ocurre cuando la línea está incompleta, es decir, solo hay uno o dos valores en vez de 3
                 try {
-                    int    t = Integer.parseInt(p[0]);
+                    double t = Double.parseDouble(p[0]);
                     double x = Double.parseDouble(p[1]);
                     double y = Double.parseDouble(p[2]);
                     puntos.add(new Pos(t, x, y));
@@ -99,38 +99,40 @@ public class GPSCarPublisher extends Publisher {
                     "Error leyendo archivo:\n" + e.getMessage()).showAndWait();
             return false;
         }
-        puntos.sort((a, b) -> Integer.compare(a.t, b.t));
+
+        // 🛠️ Cambio aquí: usamos Double.compare en lugar de Integer.compare
+        puntos.sort((a, b) -> Double.compare(a.t, b.t));
         return !puntos.isEmpty();
     }
-
 
     //segun las instrucciones de la etapa 3, el GPS debe enviar una posicion cada segundo
     //aunque el archivo original de los puntos esten separados por mas tiempo. Por eso aqui se rellena con puntos
     //intermedios. Esto segun las instrucciones, como para evitar que se teletransporte de un punto a otro.
-    private void interpolar(){
-        for(int i = 0; i<puntos.size()-1; i++){
+    private void interpolar() {
+        for (int i = 0; i < puntos.size() - 1; i++) {
             Pos p1 = puntos.get(i);
-            Pos p2 = puntos.get(i+1);
-            int dt = p2.t - p1.t;
+            Pos p2 = puntos.get(i + 1);
+            double dt = p2.t - p1.t;
 
-            //si estan raros los puntos o repetidos se salta
-            if(dt<=0){
+            // Si los puntos están mal o repetidos, se salta
+            if (dt <= 0) {
                 continue;
             }
 
-            for(int t = 0; t< dt; t++){
-                double ratio = (double)t/dt;
+            // Se interpola por cada segundo intermedio
+            for (int t = 0; t < (int) dt; t++) {
+                double ratio = t / dt;
                 double x = p1.x + ratio * (p2.x - p1.x);
                 double y = p1.y + ratio * (p2.y - p1.y);
 
-                //aqui se introduce el punto que toca en ese segundo
-                interpolados.add(new Pos(t, x, y));
+                // Aquí se introduce el punto interpolado para ese segundo
+                interpolados.add(new Pos(p1.t + t, x, y));
             }
         }
-        //agregar el ultimo punto para cerrar.
-        Pos ultimo = puntos.get(puntos.size()-1);
-        interpolados.add(new Pos(ultimo.t, ultimo.x, ultimo.y));
 
+        // Agregar el último punto para cerrar
+        Pos ultimo = puntos.get(puntos.size() - 1);
+        interpolados.add(new Pos(ultimo.t, ultimo.x, ultimo.y));
     }
 
 
