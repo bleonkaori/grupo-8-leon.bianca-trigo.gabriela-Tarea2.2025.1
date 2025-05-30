@@ -99,8 +99,7 @@ public class GPSCarPublisher extends Publisher {
                     "Error leyendo archivo:\n" + e.getMessage()).showAndWait();
             return false;
         }
-
-        // 🛠️ Cambio aquí: usamos Double.compare en lugar de Integer.compare
+        //Usamos Double.compare ya que estamos comparando números del tipo double
         puntos.sort((a, b) -> Double.compare(a.t, b.t));
         return !puntos.isEmpty();
     }
@@ -125,12 +124,12 @@ public class GPSCarPublisher extends Publisher {
                 double x = p1.x + ratio * (p2.x - p1.x);
                 double y = p1.y + ratio * (p2.y - p1.y);
 
-                // Aquí se introduce el punto interpolado para ese segundo
+                //aquí se introduce el punto interpolado para ese segundo
                 interpolados.add(new Pos(p1.t + t, x, y));
             }
         }
 
-        // Agregar el último punto para cerrar
+        //Agregar el último punto para cerrar
         Pos ultimo = puntos.get(puntos.size() - 1);
         interpolados.add(new Pos(ultimo.t, ultimo.x, ultimo.y));
     }
